@@ -32,7 +32,7 @@ const notify = $.isNode() ? require('./sendNotify') : '';
 const jdCookieNode = $.isNode() ? require('./jdCookie.js') : '';
 let jdNotify = true;//是否关闭通知，false打开通知推送，true关闭通知推送
 const randomCount = $.isNode() ? 20 : 5;
-let scoreToBeans = $.isNode()?(process.env.JD_IMMORTAL_SCORE || 700):$.getdata('scoreToBeans') || 700; //兑换多少数量的京豆（20或者1000），0表示不兑换，默认兑换20京豆，如需兑换把0改成20或者1000，或者'商品名称'(商品名称放到单引号内)即可
+let scoreToBeans = $.isNode()?(process.env.JD_IMMORTAL_SCORE || 500):$.getdata('scoreToBeans') || 700; //兑换多少数量的京豆（20或者1000），0表示不兑换，默认兑换20京豆，如需兑换把0改成20或者1000，或者'商品名称'(商品名称放到单引号内)即可
 
 //IOS等用户直接用NobyDa的jd cookie
 let cookiesArr = [], cookie = '', message;
@@ -239,7 +239,7 @@ function getExchangeInfo() {
           if (data && data['retCode'] === "200") {
             const {userRemainScore, exchageRate} = data.result
             console.log(`当前用户兑换比率${exchageRate}`)
-            if (exchageRate === 1.4 && userRemainScore >= scoreToBeans) {
+            if (userRemainScore >= scoreToBeans) {
               console.log(`已达到最大比率，去兑换`)
               await exchange()
             }
