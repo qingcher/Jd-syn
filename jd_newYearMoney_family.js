@@ -1,5 +1,4 @@
 /*
-更新2021-2-4
 京东压岁钱
 助力码会一直变，不影响助力
 活动时间：2021-2-1至2021-2-11
@@ -32,7 +31,7 @@ let jdNotify = true;//是否关闭通知，false打开通知推送，true关闭�
 const randomCount = $.isNode() ? 20 : 5;
 
 //IOS等用户直接用NobyDa的jd cookie
-let cookiesArr = [], cookie = '', message, sendAccount = [], receiveAccount = [], receiveCardList = [],information = `Basic MTM5MDY0MTAzNUBxcS5jb206YWhncnJlYmpybjRzZjRzYw==`;
+let cookiesArr = [], cookie = '', message, sendAccount = [], receiveAccount = [], receiveCardList = [];
 if ($.isNode()) {
   Object.keys(jdCookieNode).forEach((item) => {
     cookiesArr.push(jdCookieNode[item])
@@ -49,7 +48,10 @@ if ($.isNode()) {
   cookiesArr = cookiesArr.filter(item => item !== "" && item !== null && item !== undefined);
 }
 const JD_API_HOST = 'https://api.m.jd.com/client.action';
-let inviteCodes = [];
+const inviteCodes = [
+  ``,
+  ``,
+];
 !(async () => {
   await requireConfig();
   if (!cookiesArr[0]) {
@@ -172,7 +174,6 @@ function getHomeData(info = false) {
             $.cardList = data.data.result.cardInfos
             if (info) {
               $.total = poolMoney
-			  console.log(`sendAccount=${sendAccount}`)
               if (sendAccount.includes($.index.toString())) {
                 let cardList = $.cardList.filter(vo => vo.cardType !== 7)
                 if (cardList.length) {
@@ -209,6 +210,7 @@ function getHomeData(info = false) {
     })
   })
 }
+
 function lotteryHundredCard() {
   return new Promise((resolve) => {
     $.post(taskPostUrl('newyearmoney_lotteryHundredCard'), async (err, resp, data) => {
@@ -333,7 +335,7 @@ function helpFriend(inviteId) {
               console.log(`第${$.index}个京东账号将要助力的网络好友${AAA}`)
               helpFriend2(AAA)
             }
-          } 
+          }
         }
       } catch (e) {
         $.logErr(e, resp);
@@ -343,6 +345,7 @@ function helpFriend(inviteId) {
     })
   })
 }
+
 function helpFriend2(inviteId) {
   return new Promise((resolve) => {
     $.post(taskPostUrl('newyearmoney_assist', {inviteId: inviteId}), async (err, resp, data) => {
@@ -362,11 +365,13 @@ function helpFriend2(inviteId) {
           } 
         }
       } catch (e) {
-        $.logErr(e, resp);
+        $.logErr(e, resp)
       } finally {
-        resolve();
+        resolve(data);
       }
     })
+    await $.wait(2000);
+    resolve()
   })
 }
 function readShareCode() {
@@ -455,13 +460,6 @@ function receiveCard(token) {
 //格式化助力码
 function shareCodesFormat() {
   return new Promise(async resolve => {
-
-    let length= inviteCodes.length;
-      while(length > 1){
-        let index = Math.floor(Math.random() * length--);
-        [inviteCodes[length], inviteCodes[index]] = [inviteCodes[index], inviteCodes[length]];
-      }//随机
-    // console.log(inviteCodes)
     // console.log(`第${$.index}个京东账号的助力码:::${$.shareCodesArr[$.index - 1]}`)
     $.newShareCodes = [];
     if ($.shareCodesArr[$.index - 1]) {
@@ -471,8 +469,7 @@ function shareCodesFormat() {
       const tempIndex = $.index > inviteCodes.length ? (inviteCodes.length - 1) : ($.index - 1);
       $.newShareCodes = inviteCodes[tempIndex].split('@');
     }
-    const readShareCodeRes = null;	
-    // await readShareCode();
+    const readShareCodeRes = await readShareCode();
     if (readShareCodeRes && readShareCodeRes.code === 200) {
       $.newShareCodes = [...new Set([...$.newShareCodes, ...(readShareCodeRes.data || [])])];
     }
