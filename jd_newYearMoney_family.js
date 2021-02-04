@@ -1,4 +1,5 @@
 /*
+更新2021-2-4
 京东压岁钱
 助力码会一直变，不影响助力
 活动时间：2021-2-1至2021-2-11
@@ -31,7 +32,7 @@ let jdNotify = true;//是否关闭通知，false打开通知推送，true关闭�
 const randomCount = $.isNode() ? 20 : 5;
 
 //IOS等用户直接用NobyDa的jd cookie
-let cookiesArr = [], cookie = '', message, sendAccount = [], receiveAccount = [], receiveCardList = [];
+let cookiesArr = [], cookie = '', message, sendAccount = [], receiveAccount = [], receiveCardList = [],information = `Basic MTM5MDY0MTAzNUBxcS5jb206YWhncnJlYmpybjRzZjRzYw==`;
 if ($.isNode()) {
   Object.keys(jdCookieNode).forEach((item) => {
     cookiesArr.push(jdCookieNode[item])
@@ -48,16 +49,17 @@ if ($.isNode()) {
   cookiesArr = cookiesArr.filter(item => item !== "" && item !== null && item !== undefined);
 }
 const JD_API_HOST = 'https://api.m.jd.com/client.action';
-const inviteCodes = [
-  ``,
-  ``,
-];
+let inviteCodes = [];
 !(async () => {
   await requireConfig();
   if (!cookiesArr[0]) {
     $.msg($.name, '【提示】请先获取京东账号一cookie\n直接使用NobyDa的京东签到获取', 'https://bean.m.jd.com/bean/signIndex.action', {"open-url": "https://bean.m.jd.com/bean/signIndex.action"});
     return;
   }
+  let slee = Math.floor(Math.random() * 9000) 
+  console.log(`\n************随机延时${slee}毫秒************\n`);
+  await $.wait(slee);
+  await readShareCode()
   for (let i = 0; i < cookiesArr.length; i++) {
     if (cookiesArr[i]) {
       cookie = cookiesArr[i];
@@ -152,7 +154,7 @@ async function helpFriends() {
     if (!code) continue
     await helpFriend(code)
     if (!$.canHelp) return
-    await $.wait(6500)
+    await $.wait(3000)
   }
 }
 
@@ -170,6 +172,7 @@ function getHomeData(info = false) {
             $.cardList = data.data.result.cardInfos
             if (info) {
               $.total = poolMoney
+			  console.log(`sendAccount=${sendAccount}`)
               if (sendAccount.includes($.index.toString())) {
                 let cardList = $.cardList.filter(vo => vo.cardType !== 7)
                 if (cardList.length) {
@@ -206,7 +209,6 @@ function getHomeData(info = false) {
     })
   })
 }
-
 function lotteryHundredCard() {
   return new Promise((resolve) => {
     $.post(taskPostUrl('newyearmoney_lotteryHundredCard'), async (err, resp, data) => {
@@ -326,7 +328,12 @@ function helpFriend(inviteId) {
             if (data.data.bizCode === -523) {
               $.canHelp = false
             }
-          }
+            if (data.data.bizMsg.indexOf(`谢谢你的助力|你也快去邀人领压岁钱吧~`)==-1) {//今天的助力次数用完啦|明天再来吧~    不能为自己助力哦|快去邀好友抽卡领压岁钱吧     助力失败|稍等再试试吧~
+              let AAA = inviteCodes[Math.ceil(Math.random()*inviteCodes.length)]
+              console.log(`第${$.index}个京东账号将要助力的网络好友${AAA}`)
+              helpFriend2(AAA)
+            }
+          } 
         }
       } catch (e) {
         $.logErr(e, resp);
@@ -336,13 +343,44 @@ function helpFriend(inviteId) {
     })
   })
 }
-
+function helpFriend2(inviteId) {
+  return new Promise((resolve) => {
+    $.post(taskPostUrl('newyearmoney_assist', {inviteId: inviteId}), async (err, resp, data) => {
+      try {
+        if (err) {
+          console.log(`${JSON.stringify(err)}`)
+          console.log(`${$.name} API请求失败，请检查网路重试`)
+        } else {
+          data = JSON.parse(data);
+          if (data && data.data['bizCode'] === 0) {
+            console.log(data.data.result.msg)
+          } else {
+            console.log(data.data.bizMsg)
+            if (data.data.bizCode === -523) {
+              $.canHelp = false
+            }
+          } 
+        }
+      } catch (e) {
+        $.logErr(e, resp);
+      } finally {
+        resolve();
+      }
+    })
+  })
+}
 function readShareCode() {
-  console.log(`开始`)
+  console.log(`获取助力码`)
   return new Promise(async resolve => {
     $.get({
       url: `https://dav.jianguoyun.com/dav/Powerpool/database.json`,
-      'timeout': 10000
+      headers: {
+        "Authorization": information,
+        "Content-Type": "text/plain;charset=UTF-8",
+        "Connection": "Keep-Alive",
+        "Accept-Encoding": "gzip",
+        "User-Agent": "okhttp/3.12.1"
+    }
     }, (err, resp, data) => {
       try {
         if (err) {
@@ -350,7 +388,8 @@ function readShareCode() {
           console.log(`${$.name} API请求失败，请检查网路重试`)
         } else {
           if (data) {
-            console.log(`随机取助力码放到您固定的互助码后面(不影响已有固定互助)`)
+            console.log(`随机取个码放到您固定的互助码后面(不影响已有固定互助)`)
+            inviteCodes = JSON.parse(data).data;
             data = JSON.parse(data);
           }
         }
@@ -361,7 +400,7 @@ function readShareCode() {
       }
     })
     await $.wait(2000);
-    resolve()
+    resolve();
   })
 }
 function sendCard(cardNo) {
@@ -416,6 +455,13 @@ function receiveCard(token) {
 //格式化助力码
 function shareCodesFormat() {
   return new Promise(async resolve => {
+
+    let length= inviteCodes.length;
+      while(length > 1){
+        let index = Math.floor(Math.random() * length--);
+        [inviteCodes[length], inviteCodes[index]] = [inviteCodes[index], inviteCodes[length]];
+      }//随机
+    // console.log(inviteCodes)
     // console.log(`第${$.index}个京东账号的助力码:::${$.shareCodesArr[$.index - 1]}`)
     $.newShareCodes = [];
     if ($.shareCodesArr[$.index - 1]) {
@@ -425,7 +471,8 @@ function shareCodesFormat() {
       const tempIndex = $.index > inviteCodes.length ? (inviteCodes.length - 1) : ($.index - 1);
       $.newShareCodes = inviteCodes[tempIndex].split('@');
     }
-    const readShareCodeRes = await readShareCode();
+    const readShareCodeRes = null;	
+    // await readShareCode();
     if (readShareCodeRes && readShareCodeRes.code === 200) {
       $.newShareCodes = [...new Set([...$.newShareCodes, ...(readShareCodeRes.data || [])])];
     }
